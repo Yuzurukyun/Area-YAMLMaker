@@ -1,0 +1,21 @@
+*{
+	border: none;
+	background-color: #393646;
+	color: white;
+	font-family: "Lexend";
+	selection-background-color: #cce8ff;;
+	selection-color: white;
+}
+#area_details{
+	border: 1px solid white;
+	gridline-color: white;
+	font-size: 10pt;
+}
+#area_list{
+	border: 1px solid white;
+	font-size: 11pt;
+}
+#logging{
+	border: 1px solid white;
+	font-size: 10pt;
+}
