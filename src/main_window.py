@@ -3,6 +3,7 @@
 # Discord: Yuzuru#2897, Gmail: <yuzuru.aceattorneyonline@gmail.com>
 
 
+from src.display_window import DisplayScreen
 from src.second_window import ReachableScream
 from src.music_player import MusicPlayer
 from src.yaml_dataclass import TableData
@@ -28,8 +29,10 @@ class YAMLMaker(QtWidgets.QMainWindow):
         super(YAMLMaker, self).__init__()
         # Import all of the Widgets
         self.second_window = ReachableScream(self)
+        self.display_screen = DisplayScreen(self)
         self.music_player = MusicPlayer(self)
         self.file_dialog = QFileDialog()
+        self.config = Constant.load_config()
 
         # important attrs
         self.current_json_list = list()
@@ -41,12 +44,13 @@ class YAMLMaker(QtWidgets.QMainWindow):
 
         # File Related Part 1
         self.main_directory = os.getcwd()
-        self.current_directory = os.getcwd()
+        self.current_directory = os.getcwd() if not self.config['current_directory'] else self.config['current_directory']
         self.save_path = str()
         self.yaml_json_list = dict()
         self.open_filename = "Untitled"
         self.open_file_extension = ".json"
         self.application_title = "Danganronpa Online YAMLMaker"
+        self.version_number = "1.1.0"
 
         self.setStyleSheet(self._stylesheets)
         self.load_font()
@@ -106,10 +110,16 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.menubar = QtWidgets.QMenuBar(self)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 25))
         self.menubar.setObjectName("menubar")
+
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
+
+        self.menuTools = QtWidgets.QMenu(self.menubar)
+        self.menuTools.setObjectName("menuTools")
+
         self.menuHelp = QtWidgets.QMenu(self.menubar)
         self.menuHelp.setObjectName("menuHelp")
+
         self.setMenuBar(self.menubar)
 
         self.menubar_openfile = QtWidgets.QAction(self)
@@ -148,6 +158,10 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.menubar_newfile.setObjectName("menubar_newfile")
         self.menubar_newfile.triggered.connect(lambda: self.newfile_popup())
 
+        self.menubar_check_area_validity = QtWidgets.QAction(self)
+        self.menubar_check_area_validity.setObjectName("menubar_check_area_validity")
+        self.menubar_check_area_validity.triggered.connect(lambda: self.check_area_validity())
+
         self.menuFile.addAction(self.menubar_newfile)
 
         self.menuFile.addAction(self.menubar_openfile)
@@ -155,10 +169,15 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.menuFile.addAction(self.menubar_saveasfile)
         self.menuFile.addAction(self.menubar_openyaml)
         self.menuFile.addAction(self.menubar_exportyaml)
+
+        self.menuTools.addAction(self.menubar_check_area_validity)
+
         self.menuHelp.addAction(self.menubar_githubpage)
         self.menuHelp.addAction(self.menubar_play_music)
         self.menuHelp.addAction(self.menubar_stop_music)
+
         self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuTools.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi()
@@ -166,8 +185,10 @@ class YAMLMaker(QtWidgets.QMainWindow):
 
         # == Functions: Initiates on Startup == #
 
+        if self.config['play_music']:
+            self.music_player.play_player()
+
         self.area_list_details_initialise()
-        self.music_player.play_player()
         self.log_send()
 
     # == Functions: Main Window Related == #
@@ -175,7 +196,6 @@ class YAMLMaker(QtWidgets.QMainWindow):
     def is_area_name_duplicate(self, area_name: str) -> bool:
         get_list = [d['area'] for d in self.current_json_list]
         if area_name in get_list:
-            self.log_send(f"Area Name Duplicate Found. Reverting Change...")
             return True
         return False
 
@@ -193,7 +213,7 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.area_details.verticalHeader().setStyleSheet(ssv)
 
     def window_title(self, modified: bool = False) -> str:
-        title_name = f"{self.open_filename}{self.open_file_extension} - {self.application_title}"
+        title_name = f"{self.open_filename}{self.open_file_extension} - {self.application_title} ({self.version_number})"
         if modified:
             title_name = f"*{title_name}"
 
@@ -360,13 +380,97 @@ class YAMLMaker(QtWidgets.QMainWindow):
 
     # == Functions: Menu Bar Related == #
 
+    def check_area_popup(self, error_list: List[List]) -> None:
+        if error_list:
+            threatening_error_details = list()
+            non_threatening_error_details = list()
+            empty_value_error_details = list()
+
+            error_title = "You Failure"
+            error_icon = QMessageBox.Critical
+
+            # error_type: 0 - Non-threatening Errors, 1 - Threatening Errors, 2 - Empty Value After Comma Error
+            for detail in error_list:
+                list_type = 'REACHABLE AREAS' if detail[2] == 0 else 'SCREAM RANGE'
+                if detail[3] == 0:
+                    value_type = f"{list_type.title()} list is empty."
+                    detail_str = f"[{list_type}] {detail[0]['area']}: {value_type}"
+                    non_threatening_error_details.append(detail_str)
+                elif detail[3] == 1:
+                    value_type = f"Area [{detail[1]}] doesn't exist."
+                    detail_str = f"[{list_type}] {detail[0]['area']}: {value_type}"
+                    threatening_error_details.append(detail_str)
+                elif detail[3] == 2:
+                    value_type = f"{detail[0]['area']}'s [{list_type.title()}] list has a stray comma."
+                    detail_str = f"[{list_type}] {detail[0]['area']}: {value_type}"
+                    empty_value_error_details.append(detail_str)
+
+            error_message_prep = "\n> ".join(threatening_error_details)
+            error_message_prep += "\n> ".join(empty_value_error_details)
+            error_message_prep += "\n> ".join(non_threatening_error_details)
+            
+            error_message = f"Sentencing you to ULTRAKILL Fishing Music.\n" \
+                            f"Here are the Errors:\n" \
+                            f"> {error_message_prep}"
+
+            self.music_player.play_player()
+
+        else:
+            error_title = "No Errors Found"
+            error_icon = QMessageBox.Information
+            error_message = f"No Errors Found. Good job!"
+
+        popup = QMessageBox()
+        _icon_file = QtGui.QIcon(Constant.get_icon())
+        popup.setStyleSheet(self._stylesheets)
+        popup.setWindowIcon(_icon_file)
+        popup.setIcon(error_icon)
+        popup.setWindowTitle(error_title)
+        popup.setText(error_message)
+        popup.setDefaultButton(QMessageBox.Cancel)
+        popup.exec_()
+
+    def check_area_validity(self) -> None:
+        current_item = self.area_list.currentItem().text()
+        self.save_table_data(current_item)
+
+        get_all_areas = [_area['area'] for _area in self.current_json_list]
+        error_list = list()
+
+        # error: 0 - Reachable Area Error, 1 - Scream Range Error
+        # error_type: 0 - Non-threatening Errors, 1 - Threatening Errors, 2 - Empty Value After Comma Error
+        # [dict, str, error, error_type]
+        for area in self.current_json_list:
+            if not area['reachable_areas'] == "<ALL>":
+                if not area['reachable_areas']:
+                    error_list.append([area, area['area'], 0, 0])
+                else:
+                    for a in area['reachable_areas'].split(","):
+                        if not a.strip():
+                            error_list.append([area, a.strip(), 0, 2])
+                        else:
+                            if not a.strip() in get_all_areas:
+                                error_list.append([area, a.strip(), 0, 1])
+
+            if not area['scream_range'] == "<REACHABLE_AREAS>":
+                if area['scream_range']:
+                    for s in area['scream_range'].split(","):
+                        if not s.strip():
+                            error_list.append([area, s.strip(), 1, 2])
+                        else:
+                            if not s.strip() in get_all_areas:
+                                error_list.append([area, s.strip(), 1, 1])
+
+        self.check_area_popup(error_list)
+
     def export_json_file(self, destination) -> None:
         with open(destination, "w", encoding="utf-8") as file:
             json_file = json.dumps(self.current_json_list, indent=4)
             file.write(json_file)
 
     def exportfile_yaml_menu(self) -> None:
-        filename, _ = self.file_dialog.getSaveFileName(self, 'Export YAML File', Path(self.open_filename).stem, "YAML File (*.yaml)")
+        path_to_file = os.path.join(str(self.current_directory), Path(self.open_filename).stem)
+        filename, _ = self.file_dialog.getSaveFileName(self, 'Export YAML File', path_to_file, "YAML File (*.yaml)")
         if not filename:
             return
 
@@ -383,6 +487,7 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.open_filename = Path(filename).stem
         self.open_file_extension = Path(filename).suffix
         self.current_directory = Path(filename).parent
+        Constant.change_config('current_directory', str(self.current_directory))
         self.set_window_title()
 
     def open_github(self) -> None:
@@ -425,6 +530,7 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.open_file_extension = Path(filename).suffix
         self.set_window_title()
         self.current_directory = Path(filename).parent
+        Constant.change_config('current_directory', str(self.current_directory))
 
     def openfile_yaml_menu(self) -> None:
         filename, _ = self.file_dialog.getOpenFileName(self, 'Import YAML File', str(self.current_directory), "YAML File (*.yaml *.yml)")
@@ -461,11 +567,14 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.log_send(f"YAML File Opened.")
         self.open_filename = Path(filename).stem
         self.open_file_extension = Path(filename).suffix
+        self.current_directory = Path(filename).parent
+        Constant.change_config('current_directory', str(self.current_directory))
         self.set_window_title()
 
     def savefile_json_menu(self, save_as: bool = False) -> None:
+        path_to_file = os.path.join(str(self.current_directory), Path(self.open_filename).stem)
         if not self.save_path or save_as:
-            filename, _ = self.file_dialog.getSaveFileName(self, 'Save JSON File', self.open_filename, "JSON File (*.json)")
+            filename, _ = self.file_dialog.getSaveFileName(self, 'Save JSON File', path_to_file, "JSON File (*.json)")
             if not filename:
                 return
 
@@ -479,6 +588,7 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.open_filename = Path(filename).stem
         self.open_file_extension = Path(filename).suffix
         self.current_directory = Path(filename).parent
+        Constant.change_config('current_directory', str(self.current_directory))
         self.set_window_title()
 
     # == Functions: New File Menu Bar Related == #
@@ -604,17 +714,31 @@ class YAMLMaker(QtWidgets.QMainWindow):
     def customMenuRequested(self) -> None:
         custom_menu = QMenu(self)
 
+        display_full_content = QAction("Display Full Content", self)
         store_table_data = QAction("Store Current Table", self)
         open_quick_reach_screen = QAction("Open Reachable Areas Selection", self)
         transfer_reachable_to_scream = QAction("Transfer Reachable Areas Data to Scream Range", self)
 
         current_item = self.area_list.currentItem().text()
+        current_item_index = self.area_details.currentRow()
+
+        display_full_content.triggered.connect(lambda: self.display_full_content(current_item_index))
         store_table_data.triggered.connect(lambda: self.save_table_data(current_item))
         open_quick_reach_screen.triggered.connect(lambda: self.reachable_selection_screen())
         transfer_reachable_to_scream.triggered.connect(lambda: self.transfer_reachable_scream())
 
-        custom_menu.addActions([store_table_data, open_quick_reach_screen, transfer_reachable_to_scream])
+        custom_menu.addActions([display_full_content, open_quick_reach_screen, transfer_reachable_to_scream, store_table_data])
         custom_menu.exec_(QCursor.pos())
+
+    def display_full_content(self, get_index: int) -> None:
+        get_content = self.get_value_table()[get_index]
+        get_table_data = TableData().get_parameters_list()
+
+        self.display_screen.current_table_name = get_table_data[get_index]
+        self.display_screen.display_area.setText(get_table_data[get_index])
+        self.display_screen.display_text.setPlainText(get_content)
+        self.display_screen.setWindowModality(Qt.ApplicationModal)
+        self.display_screen.show()
 
     def save_table_data(self, item: str) -> None:
         get_data = self.get_value_table()
@@ -653,8 +777,10 @@ class YAMLMaker(QtWidgets.QMainWindow):
     def send_data_to_second_window(self) -> None:
         self.reorder_data()
         get_list = self.get_value_list()
+        get_chosen_list = self.get_value_table()[3].split(", ")
 
         self.second_window.select_areas.addItems(get_list)
+        self.second_window.chosen_areas.addItems(get_chosen_list)
         self.second_window.display_area.setText(self.area_list.currentItem().text())
 
     def transfer_reachable_scream(self) -> None:
@@ -669,8 +795,11 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.second_window.setWindowIcon(_icon_file)
 
         self.setWindowTitle(_translate("YAMLMaker", self.window_title()))
+
         self.menuFile.setTitle(_translate("YAMLMaker", "File"))
         self.menuHelp.setTitle(_translate("YAMLMaker", "Help"))
+        self.menuTools.setTitle(_translate("YAMLMaker", "Tools"))
+
         self.menubar_openfile.setText(_translate("YAMLMaker", "Open File"))
         self.menubar_openfile.setToolTip(_translate("YAMLMaker", "Opens a Project File"))
         self.menubar_openfile.setShortcut(_translate("YAMLMaker", "Ctrl+O"))
@@ -693,9 +822,14 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.menubar_play_music.setText(_translate("YAMLMaker", "Play Music"))
         self.menubar_play_music.setToolTip(_translate("YAMLMaker", "I Only Say Morning"))
         self.menubar_play_music.setShortcut(_translate("YAMLMaker", "Ctrl+P"))
+
         self.menubar_stop_music.setText(_translate("YAMLMaker", "Stop Music"))
         self.menubar_stop_music.setToolTip(_translate("YAMLMaker", "Because if it's a good morning, I would be fishing"))
         self.menubar_stop_music.setShortcut(_translate("YAMLMaker", "Ctrl+Shift+P"))
+
+        self.menubar_check_area_validity.setText(_translate("YAMLMaker", "Check Area Validity"))
+        self.menubar_check_area_validity.setToolTip(_translate("YAMLMaker", "Checks the validity of the Area Lists"))
+        self.menubar_check_area_validity.setShortcut(_translate("YAMLMaker", "Ctrl+Alt+C"))
 
         self.menubar_newfile.setText(_translate("YAMLMaker", "New File"))
         self.menubar_newfile.setToolTip(_translate("YAMLMaker", "Opens up a New File"))

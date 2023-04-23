@@ -38,9 +38,11 @@ class MusicPlayer(QWidget):
             self.main_window.log_send("Music Player Unmuted.")
             self.mute_player()
 
+        Constant.change_config('play_music', True)
         self.main_window.log_send()
         self.player.play()
 
     def mute_player(self) -> None:
+        Constant.change_config('play_music', False)
         self.main_window.log_send("Music Player Muted.")
         self.player.setMuted((not self.player.isMuted()))

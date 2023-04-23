@@ -50,7 +50,7 @@ class ReachableScream(QtWidgets.QDialog):
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("ReachableScream", "Reachable Areas Setter"))
-        self.confirm.setText(_translate("ReachableScream", "Confirm List"))
+        self.confirm.setText(_translate("ReachableScream", "Confirm"))
 
     # == Functions: List Related == #
 
