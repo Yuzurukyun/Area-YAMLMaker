@@ -1,0 +1,26 @@
+*{
+	border: none;
+	background-color: #393646;
+	color: white;
+	font-family: "Lexend";
+	selection-background-color: #cce8ff;;
+	selection-color: white;
+}
+#confirm{
+	border: 1px solid white;
+  	padding: 20px;
+  	text-align: center;
+	font-size: 10pt;
+}
+#display_text{
+	border: 1px solid white;
+	gridline-color: white;
+	font-size: 12pt;
+}
+#display_area{
+	border: 1px solid white;
+	gridline-color: white;
+	font-size: 12pt;
+	text-align: center;
+}
+

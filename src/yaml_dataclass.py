@@ -12,9 +12,9 @@ from typing import Dict, Any, List
 @dataclass
 class TableData:
     # Commonly Used
-    area: str = field(default="Area Name")
+    area: str = field(default="Area_")
     background: str = field(default="gs4")
-    background_tod: str = field(default='day: gs4, night: gs4')
+    background_tod: str = field(default='')
     reachable_areas: str = field(default="")
     scream_range: str = field(default="")
     default_description: str = field(default="No Description Written.")
@@ -59,9 +59,9 @@ class TableData:
     def new_table(self) -> dict:
         new_data = asdict(self)
         generated_id = Constant.id_generator()
-        new_data['area'] = f"Area _id{generated_id}"
-        new_data['reachable_areas'] = f"Area _id{generated_id}"
-        new_data['area_id'] = f"Area _id{generated_id}"
+        new_data['area'] = f"Area_{generated_id}"
+        new_data['reachable_areas'] = f"Area_{generated_id}"
+        new_data['area_id'] = f"Area_{generated_id}"
         return new_data
 
     # == Functions: Export Preparation 1 Related == #
@@ -79,9 +79,12 @@ class TableData:
         return modified_scream
 
     def prepare_tod(self) -> Dict[str, str]:
-        get_data = asdict(self)
-        tod_list = get_data['background_tod'].split(",")
-        tod_dict = {item.split(":")[0].strip(): item.split(":")[1].strip() for item in tod_list}
+        try:
+            get_data = asdict(self)
+            tod_list = get_data['background_tod'].split(",")
+            tod_dict = {item.split(":")[0].strip(): item.split(":")[1].strip() for item in tod_list}
+        except KeyError:
+            tod_dict = {}
         return tod_dict
 
     # == Functions: Export Preparation 2 Related == #
@@ -92,10 +95,11 @@ class TableData:
 
         else:
             reach_scream_list.pop(reach_scream_list.index(hub_document['area']))
-            reach_scream_list.insert(0, hub_document['area'])
 
-            if len(reach_scream_list) <= 1:
+            if len(reach_scream_list) <= 0:
                 reach_scream_list = ["<ALL>"]
+            else:
+                reach_scream_list.insert(0, hub_document['area'])
 
         return reach_scream_list
 
@@ -109,6 +113,26 @@ class TableData:
 
     def export(self, hub_document: Dict[str, Any]) -> Dict[str, Any]:
         get_data = asdict(self)
+        bool_params = ["rp_getareas_allowed", "locking_allowed", "lobby_area", "private_area", "bglock",
+                       "bullet", "cbg_allowed", "change_reachability_allowed", "gm_iclock_allowed", "iniswap_allowed",
+                       "global_allowed", "has_lights", "rollp_allowed", "rp_getarea_allowed", "song_switch_allowed"]
+        number_params = ["afk_delay", "afk_sentto"]
+
+        # Initial Checks to Check
+        for k, v in get_data.items():
+            if k == bool_params:
+                try:
+                    v = bool(v)
+                    get_data[k] = v
+                except ValueError:
+                    get_data[k].pop()
+
+            if k == number_params:
+                try:
+                    v = int(v)
+                    get_data[k] = v
+                except ValueError:
+                    get_data[k].pop()
 
         # Change Reachable Areas Data
         if not get_data['reachable_areas']:
@@ -136,7 +160,10 @@ class TableData:
             get_data.pop('background_tod')
         else:
             background_tod = self.prepare_tod()
-            get_data['background_tod'] = background_tod
+            if not background_tod:
+                get_data.pop('background_tod')
+            else:
+                get_data['background_tod'] = background_tod
 
         # So everyone could see the areas
         if not get_data['visible_areas']:
