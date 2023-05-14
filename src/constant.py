@@ -43,11 +43,6 @@ class Constant:
         return file_name
 
     @staticmethod
-    def get_music() -> str:
-        filename = "assets/storage/I only say morning.mp3"
-        return filename
-
-    @staticmethod
     def current_time() -> str:
         get_timezone = datetime.utcnow().astimezone().tzinfo
         time_now = datetime.now(get_timezone)

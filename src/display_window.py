@@ -48,7 +48,6 @@ class DisplayScreen(QtWidgets.QDialog):
     # == Functions: List Related == #
 
     def button_send(self) -> None:
-        print(self.current_table_name)
         get_table_data = TableData().get_parameters_list()
         get_table_index = get_table_data.index(self.current_table_name)
         display_text_data = self.display_text.toPlainText().strip()

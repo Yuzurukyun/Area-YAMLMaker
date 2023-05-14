@@ -120,14 +120,14 @@ class TableData:
 
         # Initial Checks to Check
         for k, v in get_data.items():
-            if k == bool_params:
+            if k in bool_params:
                 try:
                     v = bool(v)
                     get_data[k] = v
                 except ValueError:
                     get_data[k].pop()
 
-            if k == number_params:
+            if k in number_params:
                 try:
                     v = int(v)
                     get_data[k] = v

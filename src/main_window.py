@@ -5,7 +5,6 @@
 
 from src.display_window import DisplayScreen
 from src.second_window import ReachableScream
-from src.music_player import MusicPlayer
 from src.yaml_dataclass import TableData
 from src.constant import Constant
 from src.logger import Logging
@@ -30,7 +29,6 @@ class YAMLMaker(QtWidgets.QMainWindow):
         # Import all of the Widgets
         self.second_window = ReachableScream(self)
         self.display_screen = DisplayScreen(self)
-        self.music_player = MusicPlayer(self)
         self.file_dialog = QFileDialog()
         self.config = Constant.load_config()
 
@@ -50,7 +48,7 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.open_filename = "Untitled"
         self.open_file_extension = ".json"
         self.application_title = "Danganronpa Online YAMLMaker"
-        self.version_number = "1.1.0"
+        self.version_number = "1.1.1"
 
         self.setStyleSheet(self._stylesheets)
         self.load_font()
@@ -146,14 +144,6 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.menubar_githubpage.setObjectName("menubar_githubpage")
         self.menubar_githubpage.triggered.connect(lambda: self.open_github())
 
-        self.menubar_play_music = QtWidgets.QAction(self)
-        self.menubar_play_music.setObjectName("menubar_play_music")
-        self.menubar_play_music.triggered.connect(lambda: self.music_player.play_player())
-
-        self.menubar_stop_music = QtWidgets.QAction(self)
-        self.menubar_stop_music.setObjectName("menubar_stop_music")
-        self.menubar_stop_music.triggered.connect(lambda: self.music_player.mute_player())
-
         self.menubar_newfile = QtWidgets.QAction(self)
         self.menubar_newfile.setObjectName("menubar_newfile")
         self.menubar_newfile.triggered.connect(lambda: self.newfile_popup())
@@ -173,8 +163,6 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.menuTools.addAction(self.menubar_check_area_validity)
 
         self.menuHelp.addAction(self.menubar_githubpage)
-        self.menuHelp.addAction(self.menubar_play_music)
-        self.menuHelp.addAction(self.menubar_stop_music)
 
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuTools.menuAction())
@@ -184,9 +172,6 @@ class YAMLMaker(QtWidgets.QMainWindow):
         QtCore.QMetaObject.connectSlotsByName(self)
 
         # == Functions: Initiates on Startup == #
-
-        if self.config['play_music']:
-            self.music_player.play_player()
 
         self.area_list_details_initialise()
         self.log_send()
@@ -409,11 +394,8 @@ class YAMLMaker(QtWidgets.QMainWindow):
             error_message_prep += "\n> ".join(empty_value_error_details)
             error_message_prep += "\n> ".join(non_threatening_error_details)
             
-            error_message = f"Sentencing you to ULTRAKILL Fishing Music.\n" \
-                            f"Here are the Errors:\n" \
+            error_message = f"Here are the Errors:\n" \
                             f"> {error_message_prep}"
-
-            self.music_player.play_player()
 
         else:
             error_title = "No Errors Found"
@@ -818,14 +800,6 @@ class YAMLMaker(QtWidgets.QMainWindow):
         self.menubar_githubpage.setText(_translate("YAMLMaker", "Github Page"))
         self.menubar_githubpage.setToolTip(_translate("YAMLMaker", "Opens the Main Github Page on your Browser"))
         self.menubar_githubpage.setShortcut(_translate("YAMLMaker", "Ctrl+Shift+H"))
-
-        self.menubar_play_music.setText(_translate("YAMLMaker", "Play Music"))
-        self.menubar_play_music.setToolTip(_translate("YAMLMaker", "I Only Say Morning"))
-        self.menubar_play_music.setShortcut(_translate("YAMLMaker", "Ctrl+P"))
-
-        self.menubar_stop_music.setText(_translate("YAMLMaker", "Stop Music"))
-        self.menubar_stop_music.setToolTip(_translate("YAMLMaker", "Because if it's a good morning, I would be fishing"))
-        self.menubar_stop_music.setShortcut(_translate("YAMLMaker", "Ctrl+Shift+P"))
 
         self.menubar_check_area_validity.setText(_translate("YAMLMaker", "Check Area Validity"))
         self.menubar_check_area_validity.setToolTip(_translate("YAMLMaker", "Checks the validity of the Area Lists"))
